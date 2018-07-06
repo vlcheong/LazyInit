@@ -1,4 +1,5 @@
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
@@ -8,7 +9,7 @@ public final class LazyInit<T> {
 
     private final Supplier<T> supplier;
 
-    private final ReentrantReadWriteLock.WriteLock writeLock;
+    private final Lock writeLock;
 
     private LazyInit(Supplier<T> supplier) {
         this.ref = new AtomicReference<>();
