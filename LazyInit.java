@@ -21,19 +21,19 @@ public final class LazyInit<T> {
     }
 
     public T getOrCreate() {
-        T target = ref.get();
-        if (null == target) {
-            target = createAndGet();
+        T instance = ref.get();
+        if (null == instance) {
+            instance = createAndGet();
         }
-        return target;
+        return instance;
     }
 
     private T createAndGet() {
         long stamp = sl.writeLock();
         try {
-            T target = ref.get();
-            if (target != null) {
-                return target;
+            T instance = ref.get();
+            if (instance != null) {
+                return instance;
             }
             return ref.updateAndGet(prev -> (prev == null) ? supplier.get() : prev);
         } finally {
