@@ -1,20 +1,19 @@
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 
 public final class LazyInit<T> {
 
     private final AtomicReference<T> ref;
 
-    private final Supplier<T> provider;
+    private final Supplier<T> supplier;
 
-    private final Lock writeLock;
+    private final StampedLock sl;
 
-    private LazyInit(Supplier<T> provider) {
+    private LazyInit(Supplier<T> supplier) {
         this.ref = new AtomicReference<>();
-        this.provider = provider;
-        this.writeLock = new ReentrantReadWriteLock().writeLock();
+        this.supplier = supplier;
+        this.sl = new StampedLock();
     }
 
     public static <T> LazyInit<T> of(Supplier<T> supplier) {
@@ -22,23 +21,23 @@ public final class LazyInit<T> {
     }
 
     public T getOrCreate() {
-        T instance = ref.get();
-        if (null == instance) {
-            instance = createAndGet();
+        T target = ref.get();
+        if (null == target) {
+            target = createAndGet();
         }
-        return instance;
+        return target;
     }
 
     private T createAndGet() {
-        writeLock.lock();
+        long stamp = sl.writeLock();
         try {
-            T instance = ref.get();
-            if (instance != null) {
-                return instance;
+            T target = ref.get();
+            if (target != null) {
+                return target;
             }
-            return ref.updateAndGet(prev -> (prev == null) ? provider.get() : prev);
+            return ref.updateAndGet(prev -> (prev == null) ? supplier.get() : prev);
         } finally {
-            writeLock.unlock();
+            sl.unlockWrite(stamp);
         }
     }
 }
